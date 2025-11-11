@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Réviseur IA</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; display: flex; height: 100vh; }
+    .sidebar { width: 220px; background: #2c3e50; color: white; display: flex; flex-direction: column; transition: width 0.3s; }
+    .sidebar.collapsed { width: 60px; }
+    .sidebar button { background: none; border: none; color: white; padding: 1em; text-align: left; cursor: pointer; }
+    .sidebar button:hover { background: #34495e; }
+    .main { flex: 1; padding: 2em; background: #ecf0f1; }
+    .section { display: none; }
+    .section.active { display: block; }
+    textarea { width: 100%; height: 120px; margin-bottom: 1em; }
+    .output { background: white; padding: 1em; border: 1px solid #ccc; }
+    .toggle-btn { background: #1abc9c; color: white; border: none; padding: 0.5em; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="sidebar">
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+    <button onclick="showSection('revision')">📘 Révision</button>
+    <button onclick="showSection('traduction')">🌐 Traduction</button>
+    <button onclick="showSection('chat')">🤖 Chat IA</button>
+    <button onclick="showSection('resume')">✂️ Résumé</button>
+  </div>
+
+  <div class="main">
+    <div id="revision" class="section active">
+      <h2>📘 Révision</h2>
+      <p>Ajoute ici tes fiches de révision ou quiz.</p>
+    </div>
+
+    <div id="traduction" class="section">
+      <h2>🌐 Traduction</h2>
+      <textarea id="textToTranslate" placeholder="Texte à traduire..."></textarea>
+      <select id="langTarget">
+        <option value="en">Anglais</option>
+        <option value="es">Espagnol</option>
+      </select>
+      <button onclick="translateText()">Traduire</button>
+      <div class="output" id="translationOutput"></div>
+    </div>
+
+    <div id="chat" class="section">
+      <h2>🤖 Chat IA</h2>
+      <textarea id="chatInput" placeholder="Pose ta question..."></textarea>
+      <button onclick="sendChat()">Envoyer</button>
+      <div class="output" id="chatOutput"></div>
+    </div>
+
+    <div id="resume" class="section">
+      <h2>✂️ Résumé</h2>
+      <textarea id="textToSummarize" placeholder="Colle ton texte ici..."></textarea>
+      <button onclick="summarizeText()">Résumer</button>
+      <div class="output" id="summaryOutput"></div>
+    </div>
+  </div>
+
+  <script>
+    function toggleSidebar() {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    }
+
+    function showSection(id) {
+      document.querySelectorAll(".section").forEach(s => s.classList.remove("active"));
+      document.getElementById(id).classList.add("active");
+    }
+
+    function translateText() {
+      const text = document.getElementById("textToTranslate").value;
+      const lang = document.getElementById("langTarget").value;
+
+      fetch("https://libretranslate.com/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: text,
+          source: "auto",
+          target: lang,
+          format: "text"
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("translationOutput").innerText = `Traduction : ${data.translatedText}`;
+      })
+      .catch(err => {
+        document.getElementById("translationOutput").innerText = "Erreur de traduction.";
+      });
+    }
+
+    function sendChat() {
+      const input = document.getElementById("chatInput").value;
+
+      fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer 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",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-3.5-turbo",
+          messages: [{ role: "user", content: input }]
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("chatOutput").innerText = data.choices[0].message.content;
+      })
+      .catch(err => {
+        document.getElementById("chatOutput").innerText = "Erreur de réponse IA.";
+      });
+    }
+
+    function summarizeText() {
+      const text = document.getElementById("textToSummarize").value;
+
+      fetch("https://api.nlpcloud.io/v1/bart-large-cnn/summarization", {
+        method: "POST",
+        headers: {
+          "Authorization": "Token 05941fddd123628b8b898b1b278b85aa2d0a85c6",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ text: text })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("summaryOutput").innerText = `Résumé : ${data.summary}`;
+      })
+      .catch(err => {
+        document.getElementById("summaryOutput").innerText = "Erreur de résumé.";
+      });
+    }
+  </script>
+</body>
+</html>
